@@ -1,4 +1,0 @@
-QAOAfuncs
-expfuncs
-gatesimu
-measfilter
