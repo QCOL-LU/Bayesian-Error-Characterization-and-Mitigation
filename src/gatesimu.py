@@ -17,6 +17,9 @@ import numpy.linalg as nl
 # For optimization
 from cvxopt import matrix, solvers
 
+import measfilter
+import importlib
+importlib.reload(measfilter)
 from measfilter import *
 # For plot
 import matplotlib.pyplot as plt
@@ -26,7 +29,7 @@ height = 4.15 # plot height
 
 
 ######################## For Parameter Characterzation ########################
-def gate_circ(nGates, gate_type, interested_qubit, itr):
+def gate_circ(nGates, gate_type, interested_qubit, itr, backend):
     """
       Generate circuits for gate error experiment
 
@@ -47,22 +50,24 @@ def gate_circ(nGates, gate_type, interested_qubit, itr):
     None.
 
     """
-    circ = QuantumCircuit(5, 5)
+    circ = QuantumCircuit(1, 1)
     for _ in range(nGates):
         if gate_type == 'X':
-            circ.x(interested_qubit)
+            circ.x(0)
         elif gate_type == 'Y':
-            circ.y(interested_qubit)
+            circ.y(0)
         elif gate_type == 'Z':
-            circ.z(interested_qubit)
+            circ.z(0)
         else:
             raise Exception('Choose gate_type from X, Y, Z')
-        circ.barrier(interested_qubit)
-    circ.measure([interested_qubit], [interested_qubit])
-    print('Circ depth is ', circ.depth())
+        circ.barrier(0)
+    circ.measure([0], [0])
+
+    circ_trans = transpile(circ, backend, initial_layout=[interested_qubit])
+    print('Circ depth is ', circ_trans.depth())
     circs = []
     for i in range(itr):
-        circs.append(circ.copy('itr' + str(i)))
+        circs.append(circ_trans.copy('itr' + str(i)))
     return circs
 
 
@@ -103,10 +108,11 @@ def Gateexp(nGates,
 
     """
 
-    circs = gate_circ(nGates, gate_type, interested_qubit, itr)
+    circs = gate_circ(nGates, gate_type, interested_qubit, itr, backend)
     # Run on real device
     if job_id:
         job_exp =backend.retrieve_job(job_id) 
+        print("Job id:", job_exp.job_id())
     else:
         job_exp = execute(circs,
                         backend=backend,
@@ -456,9 +462,9 @@ def read_post(ideal_p0, itr,
         data = read_data(q, gate_type, gate_num, file_address=file_address)
         d = getData0(data, int(itr * shots / 1024), q)
         post_lambdas = pd.read_csv(file_address +
-                                   'Gtae_Post_Qubit{}.csv'.format(i),
+                                   'Gtae_Post_Qubit{}.csv'.format(q),
                                    header=None).to_numpy()
-        post['Qubit' + str(i)] = post_lambdas
+        post['Qubit' + str(q)] = post_lambdas
 
         # information part
         xs = np.linspace(0, 1, 1000)

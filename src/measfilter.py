@@ -173,6 +173,7 @@ def collect_filter_data(backend,
     # Excute jobs
     if job_id:
         job_m0 = backend.retrieve_job(job_id) 
+        print("Job id:", job_m0.job_id())
     else:
         job_m0 = execute(circ, backend=backend, shots=shots, memory=True)
         print("Job id:", job_m0.job_id())
@@ -458,8 +459,12 @@ def getData0(data, num_group, interested_qubit):
         count = 0
         for d in groups[i]:
             d_rev = d[::-1]
-            if d_rev[interested_qubit] == '0':
-                count += 1
+            try:
+                if d_rev[interested_qubit] == '0':
+                    count += 1
+            except: # usually because only the measurement of the interest qubit is returned
+                if d_rev[0] == '0':
+                    count += 1
 
         prob0[i] = count / groups[i].size
     return prob0
